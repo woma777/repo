@@ -1,0 +1,45 @@
+spring:
+  output:
+    ansi:
+      enabled: always
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${keycloak.server-url}/realms/${keycloak.realm}
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
+
+ip-address: 172.20.85.54
+
+keycloak:
+  server-url: http://${ip-address}:8281
+  realm: saas-realm
+  client-id: saas-client
+  client-secret: pqHiUhdDSFPQU6Hf0fg4sVXOCeCUuhkF
+  openIdConnectUrl: ${keycloak.server-url}/realms/${keycloak.realm}/.well-known/openid-configuration
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui
+    oauth:
+      client-id: ${keycloak.client-id}
+      client-secret: ${keycloak.client-secret}
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    fetch-registry: true
+    register-with-eureka: true
+    serviceUrl:
+      defaultZone: http://${ip-address}:8761/eureka/
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  endpoint:
+    health:
+      show-details: always

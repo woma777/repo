@@ -1,0 +1,22 @@
+{
+  "realm": "saas-realm",
+  "auth-server-url": "http://localhost:8080",
+  "resource": "saas-client",
+  "credentials": {
+    "secret": "7FsOMKTT2Q8uKb6FkulJHSwQfAAEKhoT"
+  },
+  "paths": [
+    {
+      "path": "/swagger-ui/*",
+      "enforcement-mode": "DISABLED"
+    },
+    {
+      "path": "/v3/api-docs/*",
+      "enforcement-mode": "DISABLED"
+    },
+    {
+      "path": "/actuator/*",
+      "enforcement-mode": "DISABLED"
+    }
+  ]
+}

@@ -1,0 +1,289 @@
+version: '3.8'
+
+services:
+  # MySQL Database
+  mysql:
+    image: mysql:latest
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: mysql
+      MYSQL_DATABASE: auth_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./databases.sql:/docker-entrypoint-initdb.d/databases.sql
+      - mysql-data:/var/lib/mysql
+    restart: unless-stopped
+    networks:
+      - saas-net
+
+  # Keycloak
+  keycloak:
+    image: quay.io/keycloak/keycloak:25.0.1
+    container_name: keycloak
+    ports:
+      - "8281:8080"
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_DB: mysql
+      KC_DB_URL: jdbc:mysql://mysql:3306/auth_db
+      KC_DB_USERNAME: root
+      KC_DB_PASSWORD: mysql
+    depends_on:
+      - mysql
+    networks:
+      - saas-net
+    restart: unless-stopped
+    command:
+      - start-dev
+
+  # Discovery Server
+  discovery-server:
+    build:
+      context: discovery-server
+      dockerfile: Dockerfile
+    image: discovery-server:latest
+    container_name: discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      - HOSTNAME = discovery-server
+    restart: unless-stopped
+    networks:
+      - saas-net
+
+  # Config Server
+  config-server:
+    build:
+      context: config-server
+      dockerfile: Dockerfile
+    image: config-server:latest
+    container_name: config-server
+    ports:
+      - "8888:8888"
+    environment:
+      DISCOVERY_SERVER_URL: http://discovery-server:8761
+    volumes:
+      - ./config:/config
+    depends_on:
+      - discovery-server
+    restart: unless-stopped
+    networks:
+      - saas-net
+
+  # API Gateway
+  api-gateway:
+    build:
+      context: api-gateway
+      dockerfile: Dockerfile
+    image: api-gateway:latest
+    container_name: api-gateway
+    ports:
+      - "8000:8000"
+    environment:
+      DISCOVERY_SERVER_URL: http://discovery-server:8761
+      CONFIG_SERVER_URL: http://config-server:8888
+    depends_on:
+      - discovery-server
+      - config-server
+    restart: unless-stopped
+    networks:
+      - saas-net
+
+  # Organization Service
+  organization-service:
+    build:
+      context: organization-service
+      dockerfile: Dockerfile
+    image: organization-service:latest
+    container_name: organization-service
+    ports:
+      - "8181:8181"
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      MYSQL_DB_URL: jdbc:mysql://mysql:3306/organization_db
+      MYSQL_DB_USERNAME: root
+      MYSQL_DB_PASSWORD: mysql
+    depends_on:
+      - discovery-server
+      - mysql
+      - keycloak
+      - config-server
+    restart: unless-stopped
+    networks:
+      - saas-net
+
+  # Employee Service
+  employee-service:
+    build:
+      context: employee-service
+      dockerfile: Dockerfile
+    image: employee-service:latest
+    container_name: employee-service
+    ports:
+      - "8180:8180"
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      MYSQL_DB_URL: jdbc:mysql://mysql:3306/employee_db
+      MYSQL_DB_USERNAME: root
+      MYSQL_DB_PASSWORD: mysql
+    depends_on:
+      - discovery-server
+      - mysql
+      - keycloak
+      - organization-service
+      - config-server
+    restart: unless-stopped
+    networks:
+      - saas-net
+
+  # Leave Service
+  leave-service:
+    build:
+      context: leave-service
+      dockerfile: Dockerfile
+    image: leave-service:latest
+    container_name: leave-service
+    ports:
+      - "8184:8184"
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      MYSQL_DB_URL: jdbc:mysql://mysql:3306/leave_db
+      MYSQL_DB_USERNAME: root
+      MYSQL_DB_PASSWORD: mysql
+    depends_on:
+      - discovery-server
+      - mysql
+      - keycloak
+      - organization-service
+      - config-server
+    restart: unless-stopped
+    networks:
+      - saas-net
+
+  # Recruitment Service
+  recruitment-service:
+    build:
+      context: recruitment-service
+      dockerfile: Dockerfile
+    image: recruitment-service:latest
+    container_name: recruitment-service
+    ports:
+      - "8182:8182"
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      MYSQL_DB_URL: jdbc:mysql://mysql:3306/recruitment_db
+      MYSQL_DB_USERNAME: root
+      MYSQL_DB_PASSWORD: mysql
+    depends_on:
+      - discovery-server
+      - mysql
+      - keycloak
+      - organization-service
+      - config-server
+    restart: unless-stopped
+    networks:
+      - saas-net
+
+  # Training Service
+  training-service:
+    build:
+      context: training-service
+      dockerfile: Dockerfile
+    image: training-service:latest
+    container_name: training-service
+    ports:
+      - "8183:8183"
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      MYSQL_DB_URL: jdbc:mysql://mysql:3306/training_db
+      MYSQL_DB_USERNAME: root
+      MYSQL_DB_PASSWORD: mysql
+    depends_on:
+      - discovery-server
+      - mysql
+      - keycloak
+      - organization-service
+      - config-server
+    restart: unless-stopped
+    networks:
+      - saas-net
+
+  # HR Planning Service
+  hr-planning-service:
+    build:
+      context: hr-planning-service
+      dockerfile: Dockerfile
+    image: hr-planning-service:latest
+    container_name: hr-planning-service
+    ports:
+      - "8186:8186"
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      MYSQL_DB_URL: jdbc:mysql://mysql:3306/hr-planning_db
+      MYSQL_DB_USERNAME: root
+      MYSQL_DB_PASSWORD: mysql
+    depends_on:
+      - discovery-server
+      - mysql
+      - keycloak
+      - organization-service
+      - config-server
+    restart: unless-stopped
+    networks:
+      - saas-net
+
+  # Auth Service
+  auth-service:
+    build:
+      context: auth-service
+      dockerfile: Dockerfile
+    image: auth-service:latest
+    container_name: auth-service
+    ports:
+      - "8185:8185"
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      MYSQL_DB_URL: jdbc:mysql://mysql:3306/auth_db
+      MYSQL_DB_USERNAME: root
+      MYSQL_DB_PASSWORD: mysql
+    depends_on:
+      - discovery-server
+      - keycloak
+      - config-server
+    restart: unless-stopped
+    networks:
+      - saas-net
+
+  # Promotion Service
+  promotion-service:
+    build:
+      context: promotion-service
+      dockerfile: Dockerfile
+    image: promotion-service:latest
+    container_name: promotion-service
+    ports:
+      - "8187:8187"
+    environment:
+      CONFIG_SERVER_URL: http://config-server:8888
+      MYSQL_DB_URL: jdbc:mysql://mysql:3306/promotion_db
+      MYSQL_DB_USERNAME: root
+      MYSQL_DB_PASSWORD: mysql
+    depends_on:
+      - discovery-server
+      - mysql
+      - keycloak
+      - organization-service
+      - config-server
+    restart: unless-stopped
+    networks:
+      - saas-net
+
+networks:
+  saas-net:
+    driver: bridge
+
+volumes:
+  mysql-data:
+    driver: local

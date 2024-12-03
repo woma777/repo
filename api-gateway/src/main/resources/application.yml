@@ -1,0 +1,89 @@
+server:
+  port: 8000
+
+spring:
+  application:
+    name: api-gateway
+
+  main:
+    allow-bean-definition-overriding: true
+    web-application-type: reactive
+
+  config:
+    import: configserver:${CONFIG_SERVER_URL:http://localhost:8888}
+
+  cloud:
+    config:
+      override-system-properties: true
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        ## organization-service Route
+        - id: organization-service
+          uri: lb://ORGANIZATION-SERVICE
+          predicates:
+            - Path=/api/organization/**
+        ## employee-service Route
+        - id: employee-service
+          uri: lb://EMPLOYEE-SERVICE
+          predicates:
+            - Path=/api/employee/**
+        ## recruitment-service Route
+        - id: recruitment-service
+          uri: lb://RECRUITMENT-SERVICE
+          predicates:
+            - Path=/api/recruitment/**
+        ## training-service Route
+        - id: training-service
+          uri: lb://TRAINING-SERVICE
+          predicates:
+            - Path=/api/training/**
+
+        ## leave-service Route
+        - id: leave-service
+          uri: lb://LEAVE-SERVICE
+          predicates:
+            - Path=/api/leave/**
+        ## auth-service Route
+        - id: auth-service
+          uri: lb://AUTH-SERVICE
+          predicates:
+            - Path=/api/keycloak/**
+        ## hr-planning-service Route
+        - id: hr-planning-service
+          uri: lb://HR-PLANNING-SERVICE
+          predicates:
+            - Path=/api/hr-planning/**
+        ## promotion-service Route
+        - id: promotion-service
+          uri: lb://PROMOTION-SERVICE
+          predicates:
+            - Path=/api/promotion/**
+        ## Discovery Service Route
+        - id: discovery-server
+          uri: ${DISCOVERY_SERVER_URL:http://localhost:8761}
+          predicates:
+            - Path=/eureka
+          filters:
+            - SetPath=/
+        ## Discovery Service Static Resources Route
+        - id: discovery-server-STATIC
+          uri: ${DISCOVERY_SERVER_URL:http://localhost:8761}
+          predicates:
+            - Path=/eureka/**
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "*"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Methods Access-Control-Allow-Headers RETAIN_FIRST
+
+logging:
+    level:
+      root: info
+      org.springframework.cloud.gateway.route.RouteDefinitionLocator: info
+      org.springframework.cloud.gateway: trace
